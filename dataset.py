@@ -3,6 +3,7 @@ import re
 import numpy as np
 from nltk.tokenize import word_tokenize
 from torch.utils.data import Dataset
+import torch
 
 class DiacriticsDataset(Dataset):
     def __init__(self):
@@ -17,8 +18,8 @@ class DiacriticsDataset(Dataset):
         with open('linguistic_resources/arabic_letters.pickle', 'rb') as file:
             self.arabic_letters = pickle.load(file)
             
-    self.pad_char = '$'
-    self.pad_diacritic = -1
+        self.pad_char = '$'
+        self.pad_diacritic = -1
             
     def load(self, path):
         with open(path, 'r', encoding='utf-8') as file:
@@ -27,13 +28,18 @@ class DiacriticsDataset(Dataset):
         cleaned_corpus = self.clean(corpus)
         sentences = self.segment_sentences(cleaned_corpus)
         characters, diacritics = self.separate_char_from_diacritics(sentences)
+        
             
         tensor_characters = [torch.tensor(sentence) for sentence in characters]
         tensor_diacritics = [torch.tensor(sentence) for sentence in diacritics]
 
+
         # Pad sequences to the maximum length
         self.character_sentences = pad_sequence(tensor_characters, batch_first=True, padding_value=self.pad_char)
         self.diacritic_sentences = pad_sequence(tensor_diacritics, batch_first=True, padding_value=self.pad_diacritic)
+        
+        
+        return self.character_sentences, self.diacritic_sentences
                     
     def is_diacritic(self, char):
         return char in self.diacritics
@@ -41,12 +47,12 @@ class DiacriticsDataset(Dataset):
     def is_arabic(self, char):
         return char in self.arabic_letters
     
-    def clean(self, save:bool=False, file:str=None) -> str:
+    def clean(self,corpus, save:bool=False, file:str=None) -> str:
         # separators = {' ', '.', ',', ';', ':', '\n'}
         separators = {'.'}
         allowed_chars = self.diacritics | self.arabic_letters | separators
         pattern = f'[^{"".join(allowed_chars)}]'
-        cleaned_corpus = re.sub(pattern, '', self.corpus)
+        cleaned_corpus = re.sub(pattern, '', corpus)
         
         if save:
             with open(file, 'w', encoding='utf-8') as file:
@@ -98,14 +104,14 @@ class DiacriticsDataset(Dataset):
         diacritics_sentences = []
         
         for sentence in sentences:
-            characters, diacritics = separate_diacritics(sentence)
+            characters, diacritics = self.separate_diacritics(sentence)
             character_sentences.append(characters)
             diacritics_sentences.append(diacritics)
             
         return character_sentences, diacritics_sentences
     
-    def segment_sentences(self):
-        sentences = self.cleaned_corpus.split('.')
+    def segment_sentences(self,corpus):
+        sentences = corpus.split('.')
         #TODO if sentence length exceeds certain threshold, then split on [, ; :]
         return sentences
         
@@ -137,21 +143,20 @@ class DiacriticsDataset(Dataset):
     #         self.tokenized_sentences.append(word_tokenize(sentence))  # tokenize each sentence
     #     return self.tokenized_sentences
 
-# def main():
-#     dataset = DiacriticsDataset()
-#     corpus = dataset.load('dataset/val.txt')
-#     cleaned_corpus = dataset.clean(save=True, file='cleaned.txt')
-#     tokenized_corpus = dataset.tokenize()
+def main():
+    dataset = DiacriticsDataset()
+    chars,diacritic = dataset.load('dataset/val.txt')
+    # cleaned_corpus = dataset.clean(save=True, file='cleaned.txt')
+    # tokenized_corpus = dataset.tokenize()
     
-#     for i, diacritic in enumerate(dataset.diacritic_classes):
-#         print(f"{i}:", 'ت' + diacritic)
+    # for i, diacritic in enumerate(dataset.diacritic_classes):
+    #     print(f"{i}:", 'ت' + diacritic)
     
-#     sentence = tokenized_corpus[2]
-#     print(sentence)
-#     for word in sentence:
-#         characters, diacritics = dataset.separate_diacritics(word)
-#         print("Characters:", characters)
-#         print("Diacritics:", diacritics)
+    # sentence = tokenized_corpus[2]
+    # print(sentence)
+    for i in range(10):
+        print(chars[i], diacritic[i])
+        
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
