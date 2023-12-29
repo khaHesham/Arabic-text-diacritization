@@ -5,15 +5,15 @@ from nltk.tokenize import word_tokenize
 
 class DiacriticsDataset: 
     def __init__(self):
-        with open('diacritic2id.pickle', 'rb') as file:
+        with open('linguistic_resources/diacritic2id.pickle', 'rb') as file:
             # Load the object from the pickle file
             self.diacritic2id = pickle.load(file)
             self.diacritic_classes = list(self.diacritic2id.keys())
             
-        with open('diacritics.pickle', 'rb') as file:
+        with open('linguistic_resources/diacritics.pickle', 'rb') as file:
             self.diacritics = pickle.load(file)
             
-        with open('arabic_letters.pickle', 'rb') as file:
+        with open('linguistic_resources/arabic_letters.pickle', 'rb') as file:
             self.arabic_letters = pickle.load(file)
             
     def load(self, path):
