@@ -5,6 +5,8 @@ from torch.utils.data import Dataset
 from torch.nn.utils.rnn import pad_sequence
 from nltk.tokenize import word_tokenize
 from typing import List, Tuple
+from more_itertools import chunked
+
 
 class DiacriticsDataset(Dataset):
     def __init__(self):
@@ -20,8 +22,12 @@ class DiacriticsDataset(Dataset):
             
         self.characters2id = {char:i for i, char in enumerate(self.arabic_letters)}
         self.id2characters = {i:char for char, i in self.characters2id.items()}
+        
             
-        self.pad = -1
+        self.pad_char = len(self.arabic_letters)
+        self.pad_diacritic = 14
+
+        self.MAX_SENTENCE_SIZE = 400
                     
     def load(self, path:str):
         with open(path, 'r', encoding='utf-8') as file:
@@ -37,8 +43,8 @@ class DiacriticsDataset(Dataset):
         tensor_diacritics = [torch.tensor(sentence) for sentence in diacritics]
 
         # Pad sequences to the maximum length
-        self.character_sentences = pad_sequence(tensor_characters, batch_first=True, padding_value=self.pad)
-        self.diacritic_sentences = pad_sequence(tensor_diacritics, batch_first=True, padding_value=self.pad)
+        self.character_sentences = pad_sequence(tensor_characters, batch_first=True, padding_value=self.pad_char)
+        self.diacritic_sentences = pad_sequence(tensor_diacritics, batch_first=True, padding_value=self.pad_diacritic)
                     
     def is_diacritic(self, char:str) -> bool:
         return char in self.diacritics
@@ -80,14 +86,20 @@ class DiacriticsDataset(Dataset):
     
     def decode_chars(self, sentence: torch.Tensor) -> List[str]:
         # Remove padding
-        unpadded_sentence = sentence[sentence != self.pad]
+        unpadded_sentence = sentence[sentence != self.pad_char]
         
         decoded_chars = [self.id2characters[encoded_char.item()] for encoded_char in unpadded_sentence]
         return decoded_chars
     
-    def segment_sentences(self,corpus:str) -> List[str]:
-        sentences = corpus.split('.')
-        #TODO if sentence length exceeds certain threshold, then split on [, ; :]
+    def segment_sentences(self, corpus:str) -> List[str]:
+        splitted_sentences = corpus.split('.')
+
+        sentences = []
+        for sentence in splitted_sentences:
+            if len(sentence) > self.MAX_SENTENCE_SIZE:
+                sentences += list(chunked(sentence, self.MAX_SENTENCE_SIZE))
+            else:
+                sentences.append(sentence)
         return sentences
     
     def separate_chars_from_diacritics(self, sentences:List[str]) -> Tuple[List[List[str]], List[List[int]]]:
