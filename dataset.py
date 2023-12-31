@@ -29,22 +29,25 @@ class DiacriticsDataset(Dataset):
 
         self.MAX_SENTENCE_SIZE = 400
                     
-    def load(self, path:str):
+    def load(self, path:str, train:bool=True):
         with open(path, 'r', encoding='utf-8') as file:
             corpus = file.read()
             
         cleaned_corpus = self.clean(corpus)
-        sentences = self.segment_sentences(cleaned_corpus)
-        characters, diacritics = self.separate_chars_from_diacritics(sentences)
+        sentences = self.segment_sentences(cleaned_corpus, train)
         
-        encoded_characters = self.encode_chars(characters)
-            
+        if train:
+            characters, diacritics = self.separate_chars_from_diacritics(sentences)
+            tensor_diacritics = [torch.tensor(sentence) for sentence in diacritics]
+            self.diacritic_sentences = pad_sequence(tensor_diacritics, batch_first=True, padding_value=self.pad_diacritic)
+        else:
+            characters = [list(sentence) for sentence in sentences]
+        
+        encoded_characters = self.encode_chars(characters)     
         tensor_characters = [torch.tensor(sentence) for sentence in encoded_characters]
-        tensor_diacritics = [torch.tensor(sentence) for sentence in diacritics]
-
-        # Pad sequences to the maximum length
+        
         self.character_sentences = pad_sequence(tensor_characters, batch_first=True, padding_value=self.pad_char)
-        self.diacritic_sentences = pad_sequence(tensor_diacritics, batch_first=True, padding_value=self.pad_diacritic)
+
                     
     def is_diacritic(self, char:str) -> bool:
         return char in self.diacritics
@@ -52,17 +55,10 @@ class DiacriticsDataset(Dataset):
     def is_arabic(self, char:str) -> bool:
         return char in self.arabic_letters
     
-    def clean(self, corpus:str, save:bool=False, file:str=None) -> str:
-        # separators = {' ', '.', ',', ';', ':', '\n'}
-        separators = {'.'}
-        allowed_chars = self.diacritics | self.arabic_letters | separators
+    def clean(self, corpus:str, test:bool=False) -> str:        
+        allowed_chars = self.diacritics | self.arabic_letters | {'.'}
         pattern = f'[^{"".join(allowed_chars)}]'
         cleaned_corpus = re.sub(pattern, '', corpus)
-        
-        if save:
-            with open(file, 'w', encoding='utf-8') as file:
-                file.write(cleaned_corpus)
-
         return cleaned_corpus
     
     def __len__(self) -> int:
@@ -91,12 +87,16 @@ class DiacriticsDataset(Dataset):
         decoded_chars = [self.id2characters[encoded_char.item()] for encoded_char in unpadded_sentence]
         return decoded_chars
     
-    def segment_sentences(self, corpus:str) -> List[str]:
+    def decode_diacritics(self, diacritics: torch.Tensor) -> List[str]:
+        decoded_diacritics = [self.diacritic_classes[diacritic] for diacritic in diacritics]
+        return decoded_diacritics
+            
+    def segment_sentences(self, corpus:str, train:bool) -> List[str]:
         splitted_sentences = corpus.split('.')
 
         sentences = []
         for sentence in splitted_sentences:
-            if len(sentence) > self.MAX_SENTENCE_SIZE:
+            if train and len(sentence) > self.MAX_SENTENCE_SIZE:
                 sentences += list(chunked(sentence, self.MAX_SENTENCE_SIZE))
             else:
                 sentences.append(sentence)
