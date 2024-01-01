@@ -125,8 +125,8 @@ class CBHGModel(nn.Module):
     
     
     
-    
-    def train(model,train_dataset, batch_size=512, epochs=10, learning_rate=0.01) :
+    # TODO: change name to Trainer
+    def train_(model,train_dataset, batch_size=16, epochs=15, learning_rate=0.001) :
         """
         Train the model on the training set.
         Args:
