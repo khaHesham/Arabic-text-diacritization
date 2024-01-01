@@ -36,7 +36,9 @@ class DiacriticsDataset(Dataset):
         cleaned_corpus = self.clean(corpus)
         sentences = self.segment_sentences(cleaned_corpus, train)
         
-        if train:
+        self.train = train
+        
+        if self.train:
             characters, diacritics = self.separate_chars_from_diacritics(sentences)
             tensor_diacritics = [torch.tensor(sentence) for sentence in diacritics]
             self.diacritic_sentences = pad_sequence(tensor_diacritics, batch_first=True, padding_value=self.pad_diacritic)
@@ -71,7 +73,10 @@ class DiacriticsDataset(Dataset):
         """
         This function returns a subset of the whole dataset
         """
-        return self.character_sentences[idx], self.diacritic_sentences[idx]
+        if self.train:
+            return self.character_sentences[idx], self.diacritic_sentences[idx]
+        else:
+            return self.character_sentences[idx]
            
     def encode_chars(self, sentences:List[List[str]]) -> List[List[int]]: 
         encoded_sentences = []
@@ -96,7 +101,7 @@ class DiacriticsDataset(Dataset):
 
         sentences = []
         for sentence in splitted_sentences:
-            if train and len(sentence) > self.MAX_SENTENCE_SIZE:
+            if len(sentence) > self.MAX_SENTENCE_SIZE:
                 sentences += list(chunked(sentence, self.MAX_SENTENCE_SIZE))
             else:
                 sentences.append(sentence)
