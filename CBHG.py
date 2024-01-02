@@ -6,7 +6,7 @@ from typing import List, Optional
 from torch import nn
 import torch
 
-from tacotron_modules import CBHG, Prenet
+from modules import CBHG, Prenet
 from dataset import DiacriticsDataset
 from tqdm import tqdm
 
