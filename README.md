@@ -53,6 +53,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 For any inquiries or feedback, please contact [AEyeTeam](mailto:abdelaziz132001@gmail.com).
-```
-
-This Markdown file can be saved as `README.md` in the root directory of your project. Adjust any paths or details as needed.
