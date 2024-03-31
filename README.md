@@ -52,7 +52,7 @@ If you wish to train your own diacritization model:
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Contact
-For any inquiries or feedback, please contact [project@example.com](mailto:abdelaziz132001@gmail.com).
+For any inquiries or feedback, please contact [AEyeTeam](mailto:abdelaziz132001@gmail.com).
 ```
 
 This Markdown file can be saved as `README.md` in the root directory of your project. Adjust any paths or details as needed.
